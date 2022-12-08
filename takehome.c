@@ -30,24 +30,13 @@ int main(void) {
   int row = 0;                      // matrix row
   int col = 0;                      // matrix col
   int k = 0;                        // line_buffer_index
-  // char temp[MAX_MATRIX_SIZE] = "";   // temp string containing integers read from line_buffer
-  // int temp_index = 0;
   fseek(file_pointer, 0, SEEK_SET); // Move file_pointer to the beginning of the file
   while (fgets(line_buffer, MAX_MATRIX_SIZE, file_pointer) != NULL) {
-    // allocate matrix row
-    matrix[row] = (int*) malloc(matrix_size*sizeof(int));
-    // // reset temp
-    // temp_index = 0;
-    // strcpy_s(temp, sizeof(temp), "");
-    //// skip any leadings spaces in line_buffer
-    //while (line_buffer[k] == " ") {
-    //  k++;
-    //}
-    printf("k = %d\n", k);
+    matrix[row] = (int*) malloc(matrix_size*sizeof(int)); // allocate matrix row
     while (line_buffer[k] != '\n' && k < MAX_MATRIX_SIZE) {
       if (line_buffer[k] == '1' || line_buffer[k] == '0') {
         // convert to int and store in matrix
-        matrix[row][col] = (line_buffer[k] == '1') ? 1 : (line_buffer[k] == '0') ? 0 : 8; // convert temp string to int
+        matrix[row][col] = (line_buffer[k] == '1') ? 1 : 0;
         col++;
         k++;
       }
@@ -60,20 +49,22 @@ int main(void) {
     col = 0;
   }
 
-  for (int i = 0; i < matrix_size; i++) {
-    for (int j = 0; j < matrix_size; j++) {
-      printf("%d ", matrix[i][j]);
-    }
-    printf("\n");
-  }
+  // for (int i = 0; i < matrix_size; i++) {
+  //   for (int j = 0; j < matrix_size; j++) {
+  //     printf("%d ", matrix[i][j]);
+  //   }
+  //   printf("\n");
+  // }
+
+  
   
 
   free(line_buffer);
-  //for (int i = 0; i < matrix_size; i++) {
+  // for (int i = 0; i < matrix_size; i++) {
   //  free(matrix[i]);
-  //}
-  //free(matrix);
-  //fclose(file_pointer);
+  // }
+  // free(matrix);
+  // fclose(file_pointer);
 
   system("pause"); // So the terminal window remains open long enough for you to read it
   return 0; // Because main returns 0 for successful completion
