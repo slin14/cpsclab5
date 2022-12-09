@@ -6,6 +6,7 @@
 #define  MAX_MATRIX_SIZE 500
 #define  BUFSIZE 256
 
+// Function to display a matlab matrix in terminal
 void display_matrix(char name[], int matrix_size, Engine* ep) {
   mxArray* result = NULL;
   printf("\nRetrieving %s\n", name);
@@ -26,53 +27,6 @@ void display_matrix(char name[], int matrix_size, Engine* ep) {
       }
     }
   }
-}
-
-// TODO
-void display_transposed(char name[], int matrix_size, Engine* ep) {
-  mxArray* result = NULL;
-  printf("\nRetrieving %s\n", name);
-  if ((result = engGetVariable(ep, name)) == NULL) {
-    fprintf(stderr, "\nFailed to retrieve %s\n", name);
-    system("pause");
-    exit(1);
-  }
-  else {
-    size_t sizeOfResult = mxGetNumberOfElements(result);
-    size_t i = 0;
-    printf("size of result: %d\n", sizeOfResult);
-    printf("%s is: \n", name);
-    // need to transpose the matrix before displaying
-    double** matrix = (double**)malloc(matrix_size * sizeof(double*));
-    int row = 0;
-    int col = 0;
-    for (i = 0; i < sizeOfResult; ++i) {
-      matrix[row] = (double*)malloc(matrix_size * sizeof(double));
-      printf("%f ", *(mxGetPr(result) + i));
-      matrix[row][col] = *(mxGetPr(result) + i);
-      if ((i + 1) % matrix_size == 0) {
-        printf("\n");
-        row++;
-      }
-      col++;
-    }
-
-    //
-    printf("\ntransposed matrix\n");
-    for (int i = 0; i < matrix_size; i++) {
-      for (int j = 0; j < matrix_size; j++) {
-        printf("%f ", matrix[i][j]);
-      }
-      printf("\n");
-    }
-  }
-
-  // free dynamic memory (gives an error in Visual Studio)
-  // for (int i = 0; i < matrix_size; i++) {
-  //  free(matrix[i]);
-  // }
-  // free(matrix);
-  // fclose(file_pointer);
 }
 
 int main(void) {
@@ -118,6 +72,7 @@ int main(void) {
     col = 0;
   }
 
+  printf("Connectivity Matrix:\n");
   for (int i = 0; i < matrix_size; i++) {
     for (int j = 0; j < matrix_size; j++) {
       printf("%f ", matrix[i][j]);
@@ -127,25 +82,19 @@ int main(void) {
 
   //////////////////////////////////////////////////
   // MATLAB
-
-  /* Variables */
   Engine* ep = NULL; // A pointer to a MATLAB engine object
   mxArray* result = NULL; // mxArray is the fundamental type underlying MATLAB data
   mxArray* m1 = NULL, * m2 = NULL;
 
-  /* Starts a MATLAB process */
-  if (!(ep = engOpen(NULL))) {
+  if (!(ep = engOpen(NULL))) { /* Starts a MATLAB process */
     fprintf(stderr, "\nCan't start MATLAB engine\n");
     system("pause");
     return 1;
   }
-
-  // Matlab-friendly var for our test data
   m1 = mxCreateDoubleMatrix(1, matrix_size, mxREAL);
   m2 = mxCreateDoubleMatrix(1, matrix_size, mxREAL);
   // copy data from local 2D array time to Matlab var
   memcpy((void*)mxGetPr(m1), (void*)matrix[0], matrix_size * sizeof(double));
-  // memcpy((void*)mxGetPr(m2), (void*)matrix[1], matrix_size * sizeof(double));
 
   // place the test array into the MATLAB workspace
   if (engPutVariable(ep, "m1", m1)) {
@@ -169,17 +118,17 @@ int main(void) {
       system("pause");
       exit(1);
     }
-
+    // testing
     //display_matrix("m2", matrix_size, ep);
     //display_matrix("m1", matrix_size, ep);
   }
 
+  // Execute pagerank in MATLAB
   if (engEvalString(ep, "ConnectivityMatrix = m1")) {
     fprintf(stderr, "\nError executing matlab instruction\n");
     system("pause");
     exit(1);
   }
-
   if (engEvalString(ep, "dimension = size(ConnectivityMatrix, 1)")) {
     fprintf(stderr, "\nError executing matlab instruction\n");
     system("pause");
@@ -246,60 +195,29 @@ int main(void) {
     exit(1);
   }
 
-
-  /*printf("\nRetrieving m1\n");
-  if ((result = engGetVariable(ep, "m1")) == NULL) {
-    fprintf(stderr, "\nFailed to retrieve m1\n");
-    system("pause");
-    exit(1);
-  }
-  else {
-    size_t sizeOfResult = mxGetNumberOfElements(result);
-    size_t i = 0;
-    printf("size of result: %d\n", sizeOfResult);
-    printf("m1 is: \n");
-    for (i = 0; i < sizeOfResult; ++i) {
-      printf("%f\n", *(mxGetPr(result) + i));
-    }
-  }
-
-  printf("\nRetrieving m2\n");
-  if ((result = engGetVariable(ep, "m2")) == NULL) {
-    fprintf(stderr, "\nFailed to retrieve m2\n");
-    system("pause");
-    exit(1);
-  }
-  else {
-    size_t sizeOfResult = mxGetNumberOfElements(result);
-    size_t i = 0;
-    printf("size of result: %d\n", sizeOfResult);
-    printf("m2 is: \n");
-    for (i = 0; i < sizeOfResult; ++i) {
-      printf("%f\n", *(mxGetPr(result) + i));
-    }
-  }*/
-
   //send the result of matlab calculation to our C program
   display_matrix("PageRank", matrix_size, ep);
 
   // free our memory and close our connection to MATLAB
   mxDestroyArray(result);
   result = NULL;
+  mxDestroyArray(m1);
+  m1 = NULL;
+  mxDestroyArray(m2);
+  m2 = NULL;
   if (engClose(ep)) {
     fprintf(stderr, "\nFailed to close MATLAB engine\n");
   }
 
-  // free dynamic memory in C program (gives an error in Visual Studio)
+  // free dynamic memory in C program (commented out because free gives an error in Visual Studio)
   free(line_buffer);
-  // for (int i = 0; i < matrix_size; i++) {
-  //  free(matrix[i]);
-  // }
-  // free(matrix);
-  // fclose(file_pointer);
+  for (int i = 0; i < matrix_size; i++) {
+    free(matrix[i]);
+  }
+  free(matrix);
+  fclose(file_pointer);
 
 
   system("pause"); // So the terminal window remains open long enough for you to read it
   return 0; // Because main returns 0 for successful completion
 }
-
-
