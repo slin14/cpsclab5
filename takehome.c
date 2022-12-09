@@ -130,16 +130,8 @@ int main(void) {
 
   /* Variables */
   Engine* ep = NULL; // A pointer to a MATLAB engine object
-  mxArray* testArray = NULL, * result = NULL; // mxArray is the fundamental type underlying MATLAB data
-
-
+  mxArray* result = NULL; // mxArray is the fundamental type underlying MATLAB data
   mxArray* m1 = NULL, * m2 = NULL;
-  //double matrixOne[3][3] = { { 1.0, 2.0, 3.0 }, {4.0, 5.0, 6.0 }, {7.0, 8.0, 9.0 } }; // Our test 'matrix', a 2-D array
-  //double matrixTwo[3][3] = { { 1.0, 2.0, 3.0 }, {4.0, 5.0, 6.0 }, {7.0, 8.0, 9.0 } }; // Our test 'matrix', a 2-D array
-  //double matrixResult[3][3] = mtimes(matrixOne, matrixTwo);
-
-  // char buffer[BUFSIZE + 1];
-
 
   /* Starts a MATLAB process */
   if (!(ep = engOpen(NULL))) {
@@ -148,28 +140,20 @@ int main(void) {
     return 1;
   }
 
-  // // capture MATLAB output directly in order to echo it
-  // if (engOutputBuffer(ep, buffer, BUFSIZE)) {
-  //   fprintf(stderr, "\nCan't create buffer for MATLAB output\n");
-  //   system("pause");
-  //   return 1;
-  // }
-  // buffer[BUFSIZE] = '\0';
-
   // Matlab-friendly var for our test data
   m1 = mxCreateDoubleMatrix(1, matrix_size, mxREAL);
   m2 = mxCreateDoubleMatrix(1, matrix_size, mxREAL);
   // copy data from local 2D array time to Matlab var
   memcpy((void*)mxGetPr(m1), (void*)matrix[0], matrix_size * sizeof(double));
   // memcpy((void*)mxGetPr(m2), (void*)matrix[1], matrix_size * sizeof(double));
-  
+
   // place the test array into the MATLAB workspace
   if (engPutVariable(ep, "m1", m1)) {
     fprintf(stderr, "\nCannot write m1 to MATLAB \n");
     system("pause");
     exit(1); // Same as return 1;
   }
-  
+
   // construct matrix in matlab from row vectors
   for (int i = 1; i < matrix_size; i++) {
     memcpy((void*)mxGetPr(m2), (void*)matrix[i], matrix_size * sizeof(double));
@@ -181,40 +165,87 @@ int main(void) {
     }
     // append current row to matlab matrix
     if (engEvalString(ep, "m1 = [m1; m2]")) {
-      fprintf(stderr, "\nError matrix mult  \n");
+      fprintf(stderr, "\nError appending row to ConnectivityMatrix \n");
       system("pause");
       exit(1);
     }
 
-    // testing
-    display_matrix("m2", matrix_size, ep);
- 
-    printf("\nRetrieving m1\n");
-    if ((result = engGetVariable(ep, "m1")) == NULL) {
-      fprintf(stderr, "\nFailed to retrieve m1\n");
-      system("pause");
-      exit(1);
-    }
-    else {
-      size_t sizeOfResult = mxGetNumberOfElements(result);
-      size_t i = 0;
-      printf("size of result: %d\n", sizeOfResult);
-      printf("m1 is: \n");
-      for (i = 0; i < sizeOfResult; ++i) {
-        printf("%f ", *(mxGetPr(result) + i));
-        if ((i + 1) % matrix_size == 0) {
-          printf("\n");
-        }
-      }
-    }
+    //display_matrix("m2", matrix_size, ep);
+    //display_matrix("m1", matrix_size, ep);
   }
 
-  if (engEvalString(ep, "mult = m1")) {
-    fprintf(stderr, "\nError matrix mult  \n");
+  if (engEvalString(ep, "ConnectivityMatrix = m1")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
     system("pause");
     exit(1);
   }
-  
+
+  if (engEvalString(ep, "dimension = size(ConnectivityMatrix, 1)")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "columnsums = sum(ConnectivityMatrix, 1)")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "p = 0.85")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "zerocolumns = find(columnsums~=0)")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "D = sparse( zerocolumns, zerocolumns, 1./columnsums(zerocolumns), dimension, dimension)")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "StochasticMatrix = ConnectivityMatrix * D")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "[row, column] = find(columnsums==0)")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "StochasticMatrix(:, column) = 1./dimension")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "Q = ones(dimension, dimension);")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "TransitionMatrix = p * StochasticMatrix + (1 - p) * (Q/dimension)")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "PageRank = ones(dimension, 1);")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "for i = 1:100 PageRank = TransitionMatrix * PageRank; end")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+  if (engEvalString(ep, "PageRank = PageRank / sum(PageRank)")) {
+    fprintf(stderr, "\nError executing matlab instruction\n");
+    system("pause");
+    exit(1);
+  }
+
 
   /*printf("\nRetrieving m1\n");
   if ((result = engGetVariable(ep, "m1")) == NULL) {
@@ -249,34 +280,10 @@ int main(void) {
   }*/
 
   //send the result of matlab calculation to our C program
-  printf("\nRetrieving mult\n");
-  if ((result = engGetVariable(ep, "mult")) == NULL) {
-    fprintf(stderr, "\nFailed to retrieve mult\n");
-    system("pause");
-    exit(1);
-  }
-  else {
-    size_t sizeOfResult = mxGetNumberOfElements(result);
-    size_t i = 0;
-    printf("size of result: %d\n", sizeOfResult);
-    printf("mult is: \n");
-    for (i = 0; i < sizeOfResult; ++i) {
-      printf("%f ", *(mxGetPr(result) + i));
-      if ((i + 1) % matrix_size == 0) {
-        printf("\n");
-      }
-    }
-  }
-
-
-  // // use Matlab output buffer -  buffer is automatically cleared and refilled with the results of the command contained in the string passed to the engine
-  // engEvalString(ep, "whos"); // whos is a handy MATLAB command that generates a list of all current variables
-  // printf("%s\n", buffer);
+  display_matrix("PageRank", matrix_size, ep);
 
   // free our memory and close our connection to MATLAB
-  mxDestroyArray(testArray);
   mxDestroyArray(result);
-  testArray = NULL;
   result = NULL;
   if (engClose(ep)) {
     fprintf(stderr, "\nFailed to close MATLAB engine\n");
